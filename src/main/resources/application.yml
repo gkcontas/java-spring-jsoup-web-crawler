@@ -1,0 +1,44 @@
+spring:
+  application:
+    name: crawler-api
+  threads:
+    # Tomcat serves requests on virtual threads too, so a slow synchronous scrape does
+    # not tie up one of a small pool of platform threads.
+    virtual:
+      enabled: true
+
+server:
+  shutdown: graceful
+
+app:
+  crawler:
+    user-agent: "gkcontas-crawler/0.1 (+https://github.com/gkcontas; portfolio project)"
+    # Jsoup exposes a single timeout covering connect plus read, so there is one knob
+    # here rather than two. Without it a thread waits on a dead host indefinitely.
+    timeout: PT10S
+    max-body-bytes: 2097152          # 2 MiB — a crawler must not be a memory bomb
+    max-redirects: 5
+    max-retries: 2
+    retry-backoff: PT0.5S
+    politeness-delay: PT1S           # minimum pause between two requests to one host
+    max-depth: 3
+    max-pages: 50
+    robots-cache-minutes: 30
+    respect-robots-txt: true
+    security:
+      # Blocking private and loopback addresses is the SSRF defence. Turning it on means
+      # this service can be pointed at the cloud metadata endpoint, at localhost admin
+      # pages, or at anything on the internal network — only enable it for a deployment
+      # whose whole purpose is crawling internal sites.
+      allow-private-addresses: false
+      # Exempts specific hosts from the private-address check while the guard stays on
+      # for everything else — the way to crawl one known internal site without opening
+      # the whole network. Exact host names only, never ranges.
+      allowed-private-hosts: []
+      # Empty means "any port". The default keeps the crawler on the two web ports, so a
+      # URL cannot be used to poke at SSH, Redis, Postgres or an Elasticsearch cluster.
+      allowed-ports: [80, 443]
+
+logging:
+  level:
+    com.gkcontas.crawler: INFO
