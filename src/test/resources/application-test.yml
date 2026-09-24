@@ -1,0 +1,19 @@
+app:
+  crawler:
+    # No pause between requests: the tests talk to a local WireMock, and a real delay
+    # would only make the suite slow. The politeness mechanism itself is covered by its
+    # own unit test and by the Crawl-delay integration test.
+    politeness-delay: PT0S
+    retry-backoff: PT0.05S
+    timeout: PT5S
+    max-pages: 20
+    max-depth: 3
+    robots-cache-minutes: 0
+    security:
+      # The SSRF guard stays ON in tests. Only the loopback host WireMock listens on is
+      # exempt, which is what lets the suite prove that everything else private is still
+      # refused — including a redirect that tries to jump there.
+      allow-private-addresses: false
+      allowed-private-hosts: ["127.0.0.1", "localhost"]
+      # WireMock binds a random high port, so the port allowlist has to be open here.
+      allowed-ports: []
